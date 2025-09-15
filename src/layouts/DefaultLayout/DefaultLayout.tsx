@@ -1,6 +1,6 @@
 // componente criado para posicionar um header fixo em todas as páginas e evitar que o header fique sendo renderizado novamente em cada pág.
 import { Outlet } from "react-router-dom";
-import { Header } from "../../components/Header";
+import { Header } from "../../components/Header/Header";
 import { LayoutContainer } from "./styles";
 
 export function DefaultLayout() {
