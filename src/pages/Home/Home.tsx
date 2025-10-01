@@ -50,11 +50,18 @@ export function Home() {
   const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId);
 
   useEffect(() => {
+
+    let interval: number;
+
     if(activeCycle){
-      setInterval(() => {
+      interval = setInterval(() => {
         setAmountSecondsPassed(differenceInSeconds(new Date(), activeCycle.startDate));
       }, 1000);
     }
+
+    return () => {
+      clearInterval(interval);
+    };
   }, [activeCycle]);
 
   function handleCreateNewCycle(data: iNewCycleFormData) {
@@ -68,6 +75,8 @@ export function Home() {
 
     setClycles((state) => [...state, newCycle]);
     setActiveCycleId(newCycle.id);
+    // reseta a qntdade de segundo passado no ciclo anterior ao criar um novo. 
+    setAmountSecondsPassed(0); 
 
     reset();
   };
@@ -80,7 +89,6 @@ export function Home() {
 
   const minutes = String(minutesAmount).padStart(2, '0');
   const seconds = String(secondsAmount).padStart(2, '0');
-
 
   const task = watch('task'); // usado para desativar o botão "submit" em StartCountDownButton
 
