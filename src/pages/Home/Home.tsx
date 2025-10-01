@@ -90,6 +90,13 @@ export function Home() {
   const minutes = String(minutesAmount).padStart(2, '0');
   const seconds = String(secondsAmount).padStart(2, '0');
 
+  //Altera título da aba para exibir timer
+  useEffect(() => {
+    if(activeCycle) {
+      document.title = `${minutes}:${seconds}`;
+    }
+  }, [minutes, seconds, activeCycle]);
+
   const task = watch('task'); // usado para desativar o botão "submit" em StartCountDownButton
 
   return (
