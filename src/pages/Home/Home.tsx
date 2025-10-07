@@ -1,4 +1,4 @@
-import { Play } from "phosphor-react";
+import { HandPalm, Play } from "phosphor-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
@@ -12,6 +12,7 @@ import {
   MinutesAmountInput,
   Separetor,
   StartCountDownButton,
+  StopCountDownButton,
   TaskInput,
 } from "./styles";
 
@@ -26,11 +27,13 @@ interface iCycle {
   task: string
   minutesAmount: number
   startDate: Date
+  interruptedDate?: Date
+  finishedDate?: Date
 }
 
 const newCycleFormValidationSchema = zod.object({
-  task: zod.string().min(1, "Informe um nome para o novo ciclo"),
-  minutesAmount: zod.number().min(5).max(60, "intervalo inválido. Informe um número entre 5 e 60")
+  task: zod.string().min(5, "Informe um nome para o novo ciclo"),
+  minutesAmount: zod.number().min(1).max(60, "intervalo inválido. Informe um número entre 5 e 60")
 });
 
 export function Home() {
@@ -48,21 +51,39 @@ export function Home() {
   });
 
   const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId);
+  const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0;
 
   useEffect(() => {
 
     let interval: number;
 
-    if(activeCycle){
+    if (activeCycle) {
       interval = setInterval(() => {
-        setAmountSecondsPassed(differenceInSeconds(new Date(), activeCycle.startDate));
+        const secondsDifference = differenceInSeconds(new Date(), activeCycle.startDate);
+
+        if (secondsDifference >= totalSeconds) {
+          setClycles(state =>
+            state.map((cycle) => {
+              if (cycle.id === activeCycleId) {
+                return { ...cycle, finishedDate: new Date() };
+              } else {
+                return cycle;
+              }
+            })
+          );
+          setAmountSecondsPassed(totalSeconds);
+          clearInterval(interval);
+        } else {
+          setAmountSecondsPassed(secondsDifference);
+        }
+
       }, 1000);
     }
 
     return () => {
       clearInterval(interval);
     };
-  }, [activeCycle]);
+  }, [activeCycle, totalSeconds, activeCycleId]);
 
   function handleCreateNewCycle(data: iNewCycleFormData) {
 
@@ -76,12 +97,24 @@ export function Home() {
     setClycles((state) => [...state, newCycle]);
     setActiveCycleId(newCycle.id);
     // reseta a qntdade de segundo passado no ciclo anterior ao criar um novo. 
-    setAmountSecondsPassed(0); 
+    setAmountSecondsPassed(0);
 
     reset();
   };
 
-  const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0;
+  function handleInterruptCycle() {
+    setClycles((state) =>
+      state.map((cycle) => {
+        if (cycle.id === activeCycleId) {
+          return { ...cycle, interruptedDate: new Date() };
+        } else {
+          return cycle;
+        }
+      })
+    );
+    setActiveCycleId(null);
+  }
+
   const currentSeconds = activeCycle ? totalSeconds - amountSecondsPassed : 0;
 
   const minutesAmount = Math.floor(currentSeconds / 60);
@@ -92,7 +125,7 @@ export function Home() {
 
   //Altera título da aba para exibir timer
   useEffect(() => {
-    if(activeCycle) {
+    if (activeCycle) {
       document.title = `${minutes}:${seconds}`;
     }
   }, [minutes, seconds, activeCycle]);
@@ -108,6 +141,7 @@ export function Home() {
             id="task"
             placeholder="Dê um nome ao seu projeto:"
             list="task-suggestion"
+            disabled={!!activeCycle}
             {...register('task')}
           />
 
@@ -126,6 +160,7 @@ export function Home() {
             step={5}
             min={5}
             max={60}
+            disabled={!!activeCycle}
             {...register('minutesAmount', { valueAsNumber: true })}
           />
 
@@ -141,11 +176,21 @@ export function Home() {
           <span>{seconds[0]}</span>
           <span>{seconds[1]}</span>
         </CountdownContainer>
+        {/* controla exibição dos botões Play/Stop */}
+        {
+          activeCycle ? (
+            <StopCountDownButton onClick={handleInterruptCycle} type="button">
+              <HandPalm size={24} />
+              Interromper
+            </StopCountDownButton>
+          ) : (
+            <StartCountDownButton disabled={!task} type="submit">
+              <Play size={24} />
+              Começar
+            </StartCountDownButton>
+          )
+        }
 
-        <StartCountDownButton disabled={!task} type="submit">
-          <Play size={24} />
-          Começar
-        </StartCountDownButton>
       </form>
     </HomeContainer>
   );
